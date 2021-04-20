@@ -8,14 +8,14 @@ import agentspeak as asp
 import agentspeak.runtime
 from agentspeak.stdlib import actions as asp_action
 from spade.behaviour import CyclicBehaviour
-from spade.agent import Agent
 from spade.template import Template
 from spade.message import Message
+from spade.transparency.TransparentAgent import TransparentAgent
 
 PERCEPT_TAG = frozenset([asp.Literal("source", (asp.Literal("percept"),))])
 
 
-class BDIAgent(Agent):
+class BDIAgent(TransparentAgent):
     def __init__(self, jid: str, password: str, asl: str, actions=None, *args, **kwargs):
         self.asl_file = asl
         self.bdi_enabled = False
@@ -40,17 +40,21 @@ class BDIAgent(Agent):
         pass
 
     def pause_bdi(self):
-        self.bdi_enabled = False
+       #self.BDIBehaviour().on_pause(self.name)
+       self.bdi_enabled = False
 
     def resume_bdi(self):
+        #self.BDIBehaviour().on_resume(self.name)
         self.bdi_enabled = True
 
     def add_behaviour(self, behaviour, template=None):
         if type(behaviour) == self.BDIBehaviour:
             self.bdi = behaviour
+            self.bdi.agent = self
         super().add_behaviour(behaviour, template)
 
     def set_asl(self, asl_file: str):
+        # Fahid: refernce this asl file...
         self.asl_file = asl_file
         self._load_asl()
 
@@ -66,7 +70,13 @@ class BDIAgent(Agent):
             self.asl_file = None
             self.pause_bdi()
 
+
+    # this is bdi....
     class BDIBehaviour(CyclicBehaviour):
+
+        def __init__(self):
+            super().__init__("BDI Behaviour")
+
         def add_actions(self):
             @self.agent.bdi_actions.add(".send", 3)
             def _send(agent, term, intention):
